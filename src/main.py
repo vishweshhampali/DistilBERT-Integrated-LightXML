@@ -20,28 +20,35 @@ from log import Logger
 import psutil
 import time
 import subprocess
+import csv
 
 
-def log_gpu_usage():
+def log_gpu_usage(useddataset, usedtransformer):
     gpu_stats = subprocess.check_output(
         ['nvidia-smi', '--query-gpu=timestamp,name,utilization.gpu,utilization.memory,memory.total,memory.used,memory.free,power.draw',
          '--format=csv,nounits,noheader']
     ).decode('utf-8').strip().split('\n')
-    with open('gpu_usage_log.csv', 'a') as f:
+    with open('gpu_usage_log.csv', 'a', newline='') as f:
+        writer = csv.writer(f)
         for stat in gpu_stats:
-            f.write(stat + '\n')
+            writer.writerow([useddataset, usedtransformer] + stat.split(','))
 
-def log_cpu_memory_usage():
+def log_cpu_memory_usage(useddataset, usedtransformer):
     cpu_usage = psutil.cpu_percent(interval=1)
     memory_info = psutil.virtual_memory()
-    with open('cpu_memory_log.txt', 'a') as f:
-        f.write(f"Time: {time.time()}, CPU: {cpu_usage}%, Memory: {memory_info.percent}%\n")
+    with open('cpu_memory_log.csv', 'a', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow([useddataset, usedtransformer, time.time(), cpu_usage, memory_info.percent])
 
-
-
-
-
-
+def record_epoch_time(dataset, transformer, epoch_times):
+    average_epoch_time = sum(epoch_times) / len(epoch_times)
+    with open('epoch_time_log.csv', 'a', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow([dataset, transformer, average_epoch_time])
+def record_total_training_time(dataset, transformer, total_training_time):
+    with open('total_training_time_log.csv', 'a', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow([dataset, transformer, total_training_time])
 
 def load_group(dataset, group_tree=0):
     if dataset == 'wiki500k':
@@ -92,11 +99,11 @@ def train(model, df, label_map):
     
     # Changed code for mobile bert
     #model, optimizer = amp.initialize(model, optimizer, opt_level="O2")
-
+    epoch_times = []
     max_only_p5 = 0
     for epoch in range(0, args.epoch+5):
-        log_gpu_usage()  # Log GPU usage
-        log_cpu_memory_usage()  # Log CPU and Memory usage
+        log_gpu_usage(args.dataset, args.bert) # Log GPU usage
+        log_cpu_memory_usage(args.dataset, args.bert) # Log CPU and Memory usage
 
         epoch_start_time = time.time()  # Start timing this epoch
 
@@ -107,8 +114,7 @@ def train(model, df, label_map):
 
         
         epoch_end_time = time.time()
-        with open('epoch_time_log.txt', 'a') as f:
-            f.write(f"Epoch {epoch} time: {epoch_end_time - epoch_start_time} seconds\n")
+        epoch_times.append(epoch_end_time - epoch_start_time)
 
         if args.valid:
             ev_result = model.one_epoch(epoch, validloader, optimizer, mode='eval')
@@ -130,7 +136,7 @@ def train(model, df, label_map):
 
         if epoch >= args.epoch + 5 and max_only_p5 != p5:
             break
-
+    record_epoch_time(args.dataset, args.bert, epoch_times)
 
 def get_exp_name():
     name = [args.dataset, '' if args.bert == 'bert-base' else args.bert]
@@ -242,6 +248,8 @@ if __name__ == '__main__':
     train(model, df, label_map)
     end_time = time.time() # End total training time tracking
 
+    # Calculate the total training time
+    total_training_time = end_time - start_time
 
-    with open('training_time_log.txt', 'a') as f:
-        f.write(f"Total training time: {end_time - start_time} seconds\n")
+    # Log the total training time
+    record_total_training_time(args.dataset, args.bert, total_training_time)
