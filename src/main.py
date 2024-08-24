@@ -23,15 +23,38 @@ import subprocess
 import csv
 
 
-def log_gpu_usage(useddataset, usedtransformer):
+def log_gpu_usage(useddataset, usedtransformer, gpu_usage_accumulator):
     gpu_stats = subprocess.check_output(
-        ['nvidia-smi', '--query-gpu=timestamp,name,utilization.gpu,utilization.memory,memory.total,memory.used,memory.free,power.draw',
+        ['nvidia-smi', '--query-gpu=utilization.gpu,utilization.memory,memory.total,memory.used,memory.free,power.draw',
          '--format=csv,nounits,noheader']
     ).decode('utf-8').strip().split('\n')
+
+    for stat in gpu_stats:
+        gpu_util, mem_util, mem_total, mem_used, mem_free, power_draw = map(float, stat.split(','))
+        gpu_usage_accumulator.append({
+            'gpu_util': gpu_util,
+            'mem_util': mem_util,
+            'mem_total': mem_total,
+            'mem_used': mem_used,
+            'mem_free': mem_free,
+            'power_draw': power_draw
+        })
+
+def aggregate_gpu_usage(gpu_usage_accumulator, dataset, transformer):
+    total_entries = len(gpu_usage_accumulator)
+    if total_entries == 0:
+        return
+
+    avg_gpu_util = sum(entry['gpu_util'] for entry in gpu_usage_accumulator) / total_entries
+    avg_mem_util = sum(entry['mem_util'] for entry in gpu_usage_accumulator) / total_entries
+    avg_mem_used = sum(entry['mem_used'] for entry in gpu_usage_accumulator) / total_entries
+    avg_mem_free = sum(entry['mem_free'] for entry in gpu_usage_accumulator) / total_entries
+    avg_power_draw = sum(entry['power_draw'] for entry in gpu_usage_accumulator) / total_entries
+
     with open('gpu_usage_log.csv', 'a', newline='') as f:
         writer = csv.writer(f)
-        for stat in gpu_stats:
-            writer.writerow([useddataset, usedtransformer] + stat.split(','))
+        writer.writerow([dataset, transformer, avg_gpu_util, avg_mem_util, avg_mem_used, avg_mem_free, avg_power_draw])
+
 
 def log_cpu_memory_usage(useddataset, usedtransformer):
     cpu_usage = psutil.cpu_percent(interval=1)
@@ -58,6 +81,7 @@ def load_group(dataset, group_tree=0):
 
 def train(model, df, label_map):
     tokenizer = model.get_tokenizer()
+
 
     if args.dataset in ['wiki500k', 'amazon670k']:
         group_y = load_group(args.dataset, args.group_y_group)
@@ -101,8 +125,11 @@ def train(model, df, label_map):
     #model, optimizer = amp.initialize(model, optimizer, opt_level="O2")
     epoch_times = []
     max_only_p5 = 0
+    gpu_usage_accumulator = []
+
     for epoch in range(0, args.epoch+5):
-        log_gpu_usage(args.dataset, args.bert) # Log GPU usage
+        log_gpu_usage(args.dataset, args.bert, gpu_usage_accumulator)
+
         log_cpu_memory_usage(args.dataset, args.bert) # Log CPU and Memory usage
 
         epoch_start_time = time.time()  # Start timing this epoch
@@ -136,6 +163,9 @@ def train(model, df, label_map):
 
         if epoch >= args.epoch + 5 and max_only_p5 != p5:
             break
+
+    aggregate_gpu_usage(gpu_usage_accumulator, args.dataset, args.bert)
+
     record_epoch_time(args.dataset, args.bert, epoch_times)
 
 def get_exp_name():
