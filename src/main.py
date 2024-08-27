@@ -3,6 +3,7 @@ import random
 import numpy as np
 from apex import amp
 from model import LightXML
+import os
 
 from sklearn.model_selection import train_test_split
 
@@ -21,6 +22,33 @@ import psutil
 import time
 import subprocess
 import csv
+
+def compute_model_stats(model):
+    total_params = sum(p.numel() for p in model.parameters())
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    param_size = sum(p.element_size() * p.nelement() for p in model.parameters()) / 1024 ** 2
+
+    stats = {
+        'model_name': model.__class__.__name__,
+        'bert_name': model.bert_name,  # Include BERT model name
+        'total_params': total_params,
+        'trainable_params': trainable_params,
+        'param_size_mb': param_size
+    }
+
+    return stats
+
+def save_model_stats_to_csv(stats, csv_path='model_stats.csv'):
+    fieldnames = ['model_name', 'bert_name', 'total_params', 'trainable_params', 'param_size_mb']
+    file_exists = os.path.isfile(csv_path)
+
+    with open(csv_path, mode='a', newline='') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+        if not file_exists:
+            writer.writeheader()
+
+        writer.writerow(stats)
 
 
 def log_gpu_usage(useddataset, usedtransformer, gpu_usage_accumulator):
@@ -275,7 +303,12 @@ if __name__ == '__main__':
         sys.exit(0)
 
     start_time = time.time()  # Start total training time tracking
+
     train(model, df, label_map)
+
+    stats = compute_model_stats(model)
+    save_model_stats_to_csv(stats)
+
     end_time = time.time() # End total training time tracking
 
     # Calculate the total training time
