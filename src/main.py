@@ -23,6 +23,36 @@ import time
 import subprocess
 import csv
 
+def save_final_evaluation_score(dataset, bert_name, final_scores, csv_path='final_evaluation_scores.csv'):
+    """
+    Save the final evaluation score, BERT model name, and dataset name to a CSV file.
+
+    :param dataset: The name of the dataset used.
+    :param bert_name: The name of the BERT model used.
+    :param final_scores: A dictionary of evaluation scores (e.g., {'p1': 0.85, 'p3': 0.75, 'p5': 0.65}).
+    :param csv_path: The path to the CSV file where the data will be saved.
+    """
+    fieldnames = ['dataset', 'bert_name', 'p1', 'p3', 'p5', 'g_p1', 'g_p3', 'g_p5']
+    file_exists = os.path.isfile(csv_path)
+
+    with open(csv_path, mode='a', newline='') as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+
+        if not file_exists:
+            writer.writeheader()
+
+        writer.writerow({
+            'dataset': dataset,
+            'bert_name': bert_name,
+            'p1': final_scores.get('p1', 'N/A'),
+            'p3': final_scores.get('p3', 'N/A'),
+            'p5': final_scores.get('p5', 'N/A'),
+            'g_p1': final_scores.get('g_p1', 'N/A'),
+            'g_p3': final_scores.get('g_p3', 'N/A'),
+            'g_p5': final_scores.get('g_p5', 'N/A'),
+        })
+
+
 def compute_model_stats(model):
     total_params = sum(p.numel() for p in model.parameters())
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -191,6 +221,18 @@ def train(model, df, label_map):
 
         if epoch >= args.epoch + 5 and max_only_p5 != p5:
             break
+
+    # Log final evaluation scores
+    final_scores = {
+        'p1': p1,
+        'p3': p3,
+        'p5': p5,
+        'g_p1': g_p1,
+        'g_p3': g_p3,
+        'g_p5': g_p5
+    }
+    save_final_evaluation_score(args.dataset, args.bert, final_scores)
+
 
     aggregate_gpu_usage(gpu_usage_accumulator, args.dataset, args.bert)
 
