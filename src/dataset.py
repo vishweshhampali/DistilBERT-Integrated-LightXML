@@ -114,6 +114,7 @@ class MDataset(Dataset):
                 attention_mask = encoding['attention_mask'].squeeze().tolist()
                 token_type_ids = [0] * len(input_ids)  # T5 doesn't use token_type_ids
             else:
+                # ADDED FOR DISTILBERT
                 input_ids = self.tokenizer.encode(
                     'filling empty' if len(text) == 0 else text,
                     add_special_tokens=True,

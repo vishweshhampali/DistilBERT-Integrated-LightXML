@@ -21,7 +21,7 @@ from transformers import RobertaTokenizerFast
 #ADDED
 from transformers import T5EncoderModel, T5Tokenizer, AutoTokenizer
 
-#ADDED DISTILBERT
+#ADDED FOR DISTILBERT
 from transformers import DistilBertTokenizer, DistilBertModel, DistilBertConfig
 
 #ADDED MOBILEBERT
@@ -52,7 +52,7 @@ def get_bert(bert_name):
         print('load t5-base')
         bert = T5EncoderModel.from_pretrained('t5-base')
     
-    #ADDED DistilBERT
+    #ADDED FOR DISTILBERT
     elif 'distilbert' in bert_name:
         print('load distilbert-base-uncased')
         model_config = DistilBertConfig.from_pretrained('distilbert-base-uncased')
@@ -200,7 +200,7 @@ class LightXML(nn.Module):
             outs = self.bert(input_ids=input_ids, attention_mask=attention_mask).last_hidden_state
             out = outs[:, 0]
         else:
-            
+            # ADDED FOR DISTILBERT
             if 'distilbert' in self.bert_name or 'mobilebert' in self.bert_name:
                 # DistilBERT does not use token_type_ids
                 outs = self.bert(
@@ -310,7 +310,7 @@ class LightXML(nn.Module):
             print('load mobilebert-uncased tokenizer')
             tokenizer = MobileBertTokenizer.from_pretrained('google/mobilebert-uncased')
 
-        #ADDED DistilBERT
+        #ADDED FOR DISTILBERT
         elif 'distilbert' in self.bert_name:
             print('load distilbert-base-uncased tokenizer')
             tokenizer = DistilBertTokenizer.from_pretrained('distilbert-base-uncased')
@@ -348,7 +348,7 @@ class LightXML(nn.Module):
         elif 'T5' in self.bert_name:
             print('load t5-base tokenizer')
             tokenizer = AutoTokenizer.from_pretrained('t5-base')
-        #ADDED DistilBERT
+        #ADDED FOR DISTILBERT
         elif 'distilbert' in self.bert_name:
             print('load distilbert-base-uncased tokenizer')
             tokenizer = DistilBertTokenizer.from_pretrained('distilbert-base-uncased')
