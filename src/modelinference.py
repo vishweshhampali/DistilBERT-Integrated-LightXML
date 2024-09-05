@@ -104,7 +104,7 @@ if __name__ == '__main__':
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writerow({
                 'Model': name,
-                'Inference Time (s)': None,
+                'Inference Time (s)': None, #AS ALREADY ADDED
                 'Top-1 Accuracy': p1,
                 'Top-3 Accuracy': p3,
                 'Top-5 Accuracy': p5
