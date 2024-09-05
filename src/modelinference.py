@@ -58,6 +58,17 @@ if __name__ == '__main__':
         # Save the model
         xmc_models.append(model)
 
+        # Write inference time to CSV immediately after it is calculated
+        with open(csv_file_path, 'a', newline='') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writerow({
+                'Model': berts[index],
+                'Inference Time (s)': inference_time,
+                'Top-1 Accuracy': 0,  # Placeholder, replace with the actual accuracy calculation
+                'Top-3 Accuracy': 0,  # Placeholder
+                'Top-5 Accuracy': 0  # Placeholder
+            })
+
     # Filter only test data
     df = df[df.dataType == 'test']
     total = len(df)
@@ -93,7 +104,7 @@ if __name__ == '__main__':
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writerow({
                 'Model': name,
-                'Inference Time (s)': inference_time,
+                'Inference Time (s)': None,
                 'Top-1 Accuracy': p1,
                 'Top-3 Accuracy': p3,
                 'Top-5 Accuracy': p5
