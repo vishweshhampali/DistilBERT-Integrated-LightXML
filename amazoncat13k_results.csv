@@ -1,0 +1,3 @@
+Model,Inference Time (s),Top-1 Accuracy,Top-3 Accuracy,Top-5 Accuracy
+bert-base,5224.223869562149,0,0,0
+roberta,3811.9733312129974,0,0,0
