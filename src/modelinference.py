@@ -20,7 +20,7 @@ if __name__ == '__main__':
 
     xmc_models = []
     predicts = []
-    berts = ['bert-base', 'roberta', 'xlnet']
+    berts = ['bert-base', 'roberta', 'xlnet', 'distilbert']
 
     # Prepare CSV file to store results
     csv_file_path = f'./results/{args.dataset}_results.csv'
