@@ -1,7 +1,7 @@
 
 # Extreme Multi-Label Text Classification with DistilBERT Integrated LightXML
 
-This repository contains experiments using LightXML integrated with various transformer-based models (DistilBERT, XLNet, Roberta) for extreme multi-label text classification tasks across three datasets: EURLEX-4K, WIKI-10-31K, and AMAZONCAT-13K.
+This repository contains experiments using LightXML integrated with DistilBERT for extreme multi-label text classification tasks across three datasets: EURLEX-4K, WIKI-10-31K, and AMAZONCAT-13K.
 
 ## Prerequisites
 
